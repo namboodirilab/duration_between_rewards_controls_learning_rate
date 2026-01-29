@@ -2,7 +2,7 @@
 """
 @author: Dennis A. Burke (dennis.burke@ucsf.edu ; permanent address: dennis.a.burke AT gmail)
 
-from Burke et al. - Duration between rewards controls the rate of behavioral and dopaminergic learning
+from Burke et al. (2026) - Duration between rewards controls the rate of behavioral and dopaminergic learning
 
 FIGURE 4: Learning rate increases, but not proportionally, with extreme trial spacing.
 
@@ -11,6 +11,9 @@ FIGURE 4: Learning rate increases, but not proportionally, with extreme trial sp
 imports
 """
 import os
+#set working directory to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 import numpy as np
 import pingouin
 import matplotlib.pyplot as plt
@@ -22,15 +25,9 @@ import functions.figure_functions as ff
 import functions.lick_photo_functions as lpf
 import functions.stats_functions as sf
 import functions.data_wrangling as dw
-#%%
 """
 set paths to data and outputs
 """
-
-#set working directory to script directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
-
 nwb_dir_path = r'..\DATA_experimental\001632'
 figure_path_root = r'..\FIGURES'
 fig_path_Figure4_ExtDataFig6fp = os.path.join(figure_path_root, r'Figure4_ExtDataFig6fp')
@@ -49,13 +46,14 @@ all_trial_data_df, df = lp.make_trial_df_from_nwb(nwb_file_info_df,
                                                                total_time_window_s = 37,
                                                                baseline_length_s = 7,
                                                                )
-#df_dlight_trials_CSplus = lp.get_behavior_trials_CSplus_df(df)
 df_behavior_trials_CSplus = lp.get_behavior_trials_CSplus_df(df)
 df_behavior_trials_CSplus_learners = lp.get_behavior_trials_CSplus_learners_df(df)
 df_dlight_trials_CSplus_learners = lp.subset_dopamine_animals(df_behavior_trials_CSplus_learners)
 df_dlight_trials_CSplus_learners_full3600 = lp.subset_dopamine_animals(lp.get_behavior_trials_CSplus_learners_df(df, full3600 = True))
 
-
+###
+# Comment out everything above this line if already loaded all data with loadAllData.py script
+###
 #%%
 """
 FIGURE 4:

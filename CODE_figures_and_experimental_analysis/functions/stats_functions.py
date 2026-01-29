@@ -12,8 +12,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import os
-
-import lick_photo_functions as lpf
+from . import lick_photo_functions as lpf
 def write_stats_to_excel():
     pass
 

@@ -2,7 +2,7 @@
 """
 @author: Dennis A. Burke (dennis.burke@ucsf.edu ; permanent address: dennis.a.burke AT gmail)
 
-from Burke et al. - Duration between rewards controls the rate of behavioral and dopaminergic learning
+from Burke et al. (2026) - Duration between rewards controls the rate of behavioral and dopaminergic learning
 
 FIGURE 6: Learning rate scaling is not explained by number of experiences per day, context extinction, overall rate of auditory cues, or overall rate of rewards.
 """
@@ -12,6 +12,10 @@ FIGURE 6: Learning rate scaling is not explained by number of experiences per da
 imports
 """
 import os
+#set working directory to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
+
 import pingouin
 import numpy as np
 import statsmodels
@@ -23,23 +27,16 @@ import functions.lick_photo_functions as lpf
 import functions.stats_functions as sf
 import functions.data_wrangling as dw
 
-
-
-#%%
 """
 set paths to data and outputs
 """
-
-#set working directory to script directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
 
 nwb_dir_path = r'..\DATA_experimental\001632'
 figure_path_root = r'..\FIGURES'
 fig_path_Figure6_ExtData8af9 = os.path.join(figure_path_root, r'Figure6_ExtData8af9')
 
-save_figs = True
-save_stats = True
+save_figs = False
+save_stats = False
 #%%
 """
 load and prepare data
@@ -60,7 +57,7 @@ all_trial_data_df, df = lp.make_trial_df_from_nwb(nwb_file_info_df,
                                                                total_time_window_s = 37,
                                                                baseline_length_s = 7,
                                                                )
-#%%
+
 df_behavior_trials_CSplus = lp.get_behavior_trials_CSplus_df(df)
 df_behavior_days_CSplus = lp.get_behavior_days_CSplus_df(df)
 df_behavior_trials_CSplus_learners = lp.get_behavior_trials_CSplus_learners_df(df)
@@ -68,6 +65,9 @@ df_dlight_trials_CSplus = lp.subset_dopamine_animals(df_behavior_trials_CSplus)
 df_first_40_trials = df_behavior_trials_CSplus[df_behavior_trials_CSplus['cue_trial_num'] <=40]
 df_dlight_days_CSplus = lp.subset_dopamine_animals(lp.get_behavior_days_CSplus_df(df))
 
+###
+# Comment out everything above this line if already loaded all data with loadAllData.py script
+###
 
 #%%
 """

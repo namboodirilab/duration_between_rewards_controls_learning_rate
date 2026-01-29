@@ -5,5 +5,7 @@
 *.asv
 *.nwb
 *.csv
+*.pyc
 001632/
 old/
+New folder/

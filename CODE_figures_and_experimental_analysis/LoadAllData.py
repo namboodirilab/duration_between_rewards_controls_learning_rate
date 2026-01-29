@@ -16,26 +16,16 @@ import scipy.stats as stats
 import scipy.io as sio
 import mat73
 from pathlib import Path
-sys.path.append(r'D:\DATA\OneDrive - UCSF\AnalysisScripts\\multi_project_modules')
-import read_nwb_files
-import default_configs as dc
-import figure_functions_refactored as ff
-import LickPhotoFunctions_choppedUp as lpf
-import plotting_functions as pf
-import stats_functions_DB as sf
-import data_wrangling as dw
-import Utils as util
 
+#set working directory to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 import functions.load_preprocess  as lp
 import functions.default_configs as dc
 import functions.figure_functions as ff
 import functions.lick_photo_functions as lpf
 import functions.stats_functions as sf
 import functions.data_wrangling as dw
-
-#set working directory to script directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
 
 """
 set paths to data and outputs
@@ -73,8 +63,8 @@ Path(fig_path_ExtDataFig5).mkdir(parents=True, exist_ok=True)
 #  = fig_path_Figure7_ExtDataFig10 = fig_path_Figure8 = fig_path_ExtDataFig8fk = fig_path_ExtDataFig5
 #  = fig_path_all)
 
-save_figs = True
-save_stats = True
+save_figs = False
+save_stats = False
 #%%
 
 """
@@ -88,6 +78,10 @@ all_trial_data_df, df, all_session_data_df = lp.make_trial_df_from_nwb(nwb_file_
                                                                baseline_length_s = 7,
                                                                return_session_df = True)
 #%%
+###
+# Uncomment below to save/load data structure as pickle to quickly reuse later
+###
+
 # lpf.savePickle(all_trial_data_df, os.path.join(pickle_path, 'all_TRIAL_data_df_fromNWB.pkl'))
 # lpf.savePickle(all_session_data_df,  os.path.join(pickle_path, 'all_SESSION_data_df_fromNWB.pkl'))
 # lpf.savePickle(df,  os.path.join(pickle_path, 'processed_df_fromNWB.pkl'))

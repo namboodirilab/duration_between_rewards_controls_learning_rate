@@ -9,7 +9,7 @@ HELPER FUNCTIONS
 
 import pandas as pd
 
-import lick_photo_functions as lpf
+from . import lick_photo_functions as lpf
 
 def get_average_of_single_day_dff_reward(trial_df,
                                         peak_or_auc ='auc',

@@ -16,7 +16,7 @@ from pynwb import NWBHDF5IO
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-import lick_photo_functions as lpf
+from . import lick_photo_functions as lpf
 
 def convert_names_to_dandi_convention(conditions_list):
     mapping_table = str.maketrans({'%': 'percent', '_': '-'})
@@ -49,13 +49,23 @@ def get_nwb_animals_by_condition(nwb_dir_path,
                                  conditions_to_get,
                                  dopamine_only = False,
                                  dandi_naming_convention = True,
+                                 skip_FC_animals = True,
                                  ):
     if conditions_to_get == 'all':
-        return [f.name
-                for f
-                in os.scandir(nwb_dir_path)
-                if f.is_dir()
-                ]
+        if skip_FC_animals:
+            return [f.name
+                    for f
+                    in os.scandir(nwb_dir_path)
+                    if (f.is_dir()
+                    and 'FC-45s' not in f.name
+                    and 'FC-135s' not in f.name)
+                    ]
+        else:
+            return [f.name
+                    for f
+                    in os.scandir(nwb_dir_path)
+                    if f.is_dir()
+                    ]
     elif isinstance(conditions_to_get, list):
         if dandi_naming_convention:
             conditions = [x.replace('%', 'percent') for x in conditions_to_get]
@@ -68,6 +78,7 @@ def get_nwb_animals_by_condition(nwb_dir_path,
 
     conditions_with_da = [x + 'D' for x in conditions]
     conditions_with_and_wo_da = conditions + conditions_with_da
+
     if dopamine_only:
         conditions_to_return = conditions_with_da
     else:
@@ -87,12 +98,16 @@ def get_nwb_animals_by_condition(nwb_dir_path,
 def get_all_nwb_files_by_condition(nwb_dir_path,
                                    conditions_to_get,
                                    dopamine_only = False,
-                                   dandi_naming_convention = True):
+                                   dandi_naming_convention = True,
+                                   skip_FC_animals = True,
+                                   ):
     nwb_file_info_df = pd.DataFrame()
     animals_in_conditions = get_nwb_animals_by_condition(nwb_dir_path,
                                                          conditions_to_get,
                                                          dopamine_only = dopamine_only,
-                                                         dandi_naming_convention = dandi_naming_convention)
+                                                         dandi_naming_convention = dandi_naming_convention,
+                                                         skip_FC_animals = skip_FC_animals,
+                                                         )
     animals_in_conditions = natsorted(animals_in_conditions)
     for animal in animals_in_conditions:
         day_files = [f.name
@@ -231,6 +246,14 @@ def get_dff_from_nwb(nwb_file_path,
             return photo_df.to_numpy()
         else:
             return photo_df
+def get_photo_events_FC_from_nwb(nwb_file_path,
+                                 ):
+    with NWBHDF5IO(nwb_file_path, mode='r') as io:
+        nwb_file = io.read()
+        photo_events_FC = nwb_file.acquisition["photometry_event_times"]
+
+        photo_events_FC_df = photo_events_FC.to_dataframe()
+        return photo_events_FC_df
 def check_if_nwb_has_photometry(nwb_file_path):
     with NWBHDF5IO(nwb_file_path, 'r') as io:
         nwb_file = io.read()
@@ -264,7 +287,7 @@ def make_trial_df_from_nwb(nwb_file_info_df,
             #for file where doric crashed and missed last cue/reward, we're going to ignore those in matlab data
             if (last_recorded_photo_time + .01)< matfile_end_time: #add 10ms buffer so that not triggered by rounding errors
                 event_log_df = event_log_df[event_log_df['timestamp']<last_recorded_photo_time]
-                print(f'chopping {animal} on {day_num}')
+                #print(f'chopping {animal} on {day_num} to match photometry data')
 
         CSplus_ar = get_timestamps_from_event_code(event_log_df, 15)
         antic_dur = convert_ms_to_s(params['CS_t_fxd'][1])
@@ -542,33 +565,6 @@ def make_trial_df_from_nwb(nwb_file_info_df,
                                                   for x
                                                   in bothCS_single_day_df['licks_consume_5s']
                                                   ]
-
-        # bothCS_single_day_df['nlicks_bsln_500ms'] = [len(x)
-        #                                              for x
-        #                                              in bothCS_single_day_df['licks_bsln_500ms']
-        #                                              ]
-        # bothCS_single_day_df['nlicks_antic_raw_500ms'] = [len(x)
-        #                                                   for x
-        #                                                   in bothCS_single_day_df['licks_antic_500ms']
-        #                                                   ]
-        # bothCS_single_day_df['nlicks_antic_norm_500ms'] = (bothCS_single_day_df['nlicks_antic_raw_500ms']
-        #                                                    - bothCS_single_day_df['nlicks_bsln_500ms']
-        #                                                    )
-        # bothCS_single_day_df['antic_norm_rate_change_500ms'] = [licks/(0.5)
-        #                                                         for licks
-        #                                                         in bothCS_single_day_df['nlicks_antic_norm_500ms']
-        #                                                         ]
-        # bothCS_single_day_df['nlicks_antic_raw_cue_500ms'] = [len(x)
-        #                                                       for x
-        #                                                       in bothCS_single_day_df['licks_antic_cue_500ms']
-        #                                                       ]
-        # bothCS_single_day_df['nlicks_antic_norm_cue_500ms'] = (bothCS_single_day_df['nlicks_antic_raw_cue_500ms']
-        #                                                        - bothCS_single_day_df['nlicks_bsln_500ms']
-        #                                                        )
-        # bothCS_single_day_df['antic_norm_rate_change_cue_500ms'] = [licks/(0.5)
-        #                                                             for licks
-        #                                                             in bothCS_single_day_df['nlicks_antic_norm_cue_500ms']
-        #                                                             ]
         bothCS_single_day_df['antic_norm_rate_change'] = [licks/(time/1)
                                                           for (licks,
                                                                time)
@@ -603,10 +599,6 @@ def make_trial_df_from_nwb(nwb_file_info_df,
                                                                 )
                                                          ]
         bothCS_single_day_df['mean_antic_norm_rate_change'] = bothCS_single_day_df['antic_norm_rate_change'].mean()
-        #bothCS_single_day_df['mean_antic_norm_rate_change_500ms'] = bothCS_single_day_df['antic_norm_rate_change_500ms'].mean()
-        #bothCS_single_day_df['matfile'] = ([file_df_row['matfile']]
-        #                                     * len(bothCS_single_day_df)
-        #                                     )
         if has_photo_data:
             bothCS_single_day_df['epoch_dff_rewardlick_aligned_time'] = [time - lick[lick > 0][0]
                                                                          if ((lick[lick > 0].size> 0)
@@ -687,18 +679,7 @@ def make_trial_df_from_nwb(nwb_file_info_df,
             bothCS_single_day_df['epoch_dff_peak_consume_norm_lickaligned'] = (bothCS_single_day_df['epoch_dff_peak_consume_raw_lickaligned']
                                                                                - bothCS_single_day_df['epoch_dff_bsln_mean']
                                                                                )
-            # bothCS_single_day_df['epoch_dff_dip_consume_raw_lickaligned'] = [np.min(dff[((time >= 0)
-            #                                                                              & (time < (antic_dur)))
-            #                                                                             ]
-            #                                                                         )
-            #                                                                  for (dff,
-            #                                                                       time)
-            #                                                                  in zip(bothCS_single_day_df['epoch_dff'],
-            #                                                                         bothCS_single_day_df['epoch_dff_rewardlick_aligned_time'])
-            #                                                                  ]
-            # bothCS_single_day_df['epoch_dff_dip_consume_norm_lickaligned'] = (bothCS_single_day_df['epoch_dff_dip_consume_raw_lickaligned']
-            #                                                                   - bothCS_single_day_df['epoch_dff_bsln_mean']
-            #                                                                   )
+
             #AUC
             bothCS_single_day_df['epoch_dff_bsln_auc'] = [auc(time[((time >= (-2*antic_dur))
                                                                     & (time < cue_start))
@@ -724,43 +705,7 @@ def make_trial_df_from_nwb(nwb_file_info_df,
                                                                in zip(bothCS_single_day_df['epoch_dff'],
                                                                       bothCS_single_day_df['epoch_time'])
                                                                ]
-            # bothCS_single_day_df['epoch_dff_auc_consume_raw'] = [auc(time[((time >= 0)
-            #                                                                & (time < (antic_dur)))
-            #                                                               ],
-            #                                                          dff[((time >= 0)
-            #                                                               & (time < (antic_dur)))
-            #                                                              ]
-            #                                                          )
-            #                                                      for (dff,
-            #                                                           time)
-            #                                                      in zip(bothCS_single_day_df['epoch_dff'],
-            #                                                             bothCS_single_day_df['epoch_time'])
-            #                                                      ]
-            # bothCS_single_day_df['epoch_dff_auc_antic_norm'] = (bothCS_single_day_df['epoch_dff_auc_antic_raw']
-            #                                                     - bothCS_single_day_df['epoch_dff_bsln_auc']
-            #                                                     )
-            # bothCS_single_day_df['epoch_dff_auc_consume_norm'] =  (bothCS_single_day_df['epoch_dff_auc_consume_raw']
-            #                                                        - bothCS_single_day_df['epoch_dff_bsln_auc']
-            #                                                        )
-            # bothCS_single_day_df['epoch_dff_auc_consume_raw_lickaligned'] = [auc(time[(time >= 0)
-            #                                                                           & (time < (antic_dur))
-            #                                                                           ],
-            #                                                                      dff[(time >= 0)
-            #                                                                          & (time < (antic_dur))
-            #                                                                          ]
-            #                                                                      )
-            #                                                                  if (isinstance(dff, np.ndarray)
-            #                                                                      & (isinstance(time, np.ndarray)))
-            #                                                                  else np.nan
-            #                                                                  for (dff,
-            #                                                                       time)
-            #                                                                  in zip(bothCS_single_day_df['epoch_dff'],
-            #                                                                         bothCS_single_day_df['epoch_dff_rewardlick_aligned_time'])
-            #                                                                  ]
 
-            # bothCS_single_day_df['epoch_dff_auc_consume_norm_lickaligned'] = (bothCS_single_day_df['epoch_dff_auc_consume_raw_lickaligned']
-            #                                                                   - bothCS_single_day_df['epoch_dff_bsln_auc']
-            #                                                                  )
             #peak and auc measurements for 500ms window immediately following cue/reward
             #peak
             measure_wind_ms = 0.500
@@ -1042,6 +987,269 @@ def make_trial_df_from_nwb(nwb_file_info_df,
         return all_trial_data_df, df, all_session_data_df
     return all_trial_data_df, df
 
+def make_trial_df_from_nwb_FC(nwb_file_info_df,
+                              total_time_window = 40,
+                              baseline_length = 15,
+                              ):
+    FC_trial_data_df = pd.DataFrame()
+    for ics, file_df_row in nwb_file_info_df.iterrows():
+        animal = file_df_row['animal']
+        sex = file_df_row['sex']
+        condition = file_df_row['condition']
+        day_num = file_df_row['day_num']
+        photometry_df = get_dff_from_nwb(file_df_row['nwb_file'])
+        photo_events_df = get_photo_events_FC_from_nwb(file_df_row['nwb_file'])
+        with NWBHDF5IO(file_df_row['nwb_file'], 'r') as io:
+            nwb = io.read()
+            behavior_data_summary = nwb.intervals["trials"].to_dataframe()
+            baseline_data_summary = behavior_data_summary[behavior_data_summary['analysis_period'] =='bsln']
+            cue_data_summary = behavior_data_summary[behavior_data_summary['analysis_period'] =='cue']
+            detailed_behavior_data = nwb.acquisition['eztrack_framewise']
+            n_frames = detailed_behavior_data.data.shape[0]
+            detailed_behavior_data_time = detailed_behavior_data.starting_time + np.arange(n_frames) / detailed_behavior_data.rate
+            #detailed_behavior_data_time = detailed_behavior_data.timestamps[:]
+            framerate = detailed_behavior_data.rate
+            detailed_behavior_data_frames = detailed_behavior_data_time/ framerate
+            detailed_behavior_data_motion = detailed_behavior_data.data[:,0]
+            detailed_behavior_data_freezing = detailed_behavior_data.data[:,1]
+            cue_on_times_behavior = nwb.processing['behavior']['cue_on_times_behavior'].to_dataframe()
+
+        video_cue_onsets = cue_on_times_behavior['cue_on_times_in_sec'].values
+        video_cue_onsets_frames = [int(round(x*framerate)) for x in video_cue_onsets]
+        total_time_window_shock_frames = (total_time_window)*framerate
+        baseline_length_shock_frames = (baseline_length)*framerate
+        # print(f' detailed_behavior_data_time {len(detailed_behavior_data_time)} \n detailed_behavior_data_motion {len(detailed_behavior_data_motion)} \n video_cue_onsets {len(video_cue_onsets)}')
+        # print(video_cue_onsets.values)
+        # print(detailed_behavior_data_time)
+        epoch_motion = lpf.extractEpoch(detailed_behavior_data_time,
+                                         detailed_behavior_data_motion,
+                                         video_cue_onsets,
+                                         total_time_window = total_time_window_shock_frames,
+                                         baseline_period = baseline_length_shock_frames
+                                         )
+
+        cue_on_photo = photo_events_df[photo_events_df['event_type'] == 'cue_on']['timestamp']
+        cue_off_photo = photo_events_df[photo_events_df['event_type'] == 'cue_off']['timestamp']
+        shock_on_photo = photo_events_df[photo_events_df['event_type'] == 'shock_on']['timestamp']
+        shock_off_photo = photo_events_df[photo_events_df['event_type'] == 'shock_off']['timestamp']
+
+        # if condition == 'SHORT':
+        #     cue_on_photo = cue_on_photo[:13]
+        #     cue_off_photo = cue_off_photo[:13]
+        #     shock_on_photo = shock_on_photo[:13]
+        #     shock_off_photo = shock_off_photo[:13]
+        # elif condition == 'LONG':
+        #     cue_on_photo = cue_on_photo[:5]
+        #     cue_off_photo = cue_off_photo[:5]
+        #     shock_on_photo = shock_on_photo[:5]
+        #     shock_off_photo = shock_off_photo[:5]
+
+        photo_time = photometry_df['time']
+        dFF = photometry_df['dff']
+        num_trials = len(cue_on_photo)
+        temp_ITItimes = cue_on_photo[1:].values - shock_off_photo[:-1].values
+        ITItimes = np.insert(temp_ITItimes,0, 300) #first cue onset at 300 seconds into session
+
+
+        cue_shock_single_day_df = pd.DataFrame(data = {'animal': [animal] * num_trials,
+                                                    'sex': [sex] * num_trials,
+                                                    'condition': [condition] * num_trials,
+                                                    'day_num': [day_num] * num_trials,
+                                                    'trial_num': list(np.arange(num_trials)+1),
+                                                    'cue_type': ['CS_plus']* num_trials,
+                                                    'trial_type': ['shock']* num_trials,
+                                                    'cue_on_photo': cue_on_photo.values,
+                                                    'cue_on_video_times': video_cue_onsets,
+                                                    'cue_on_video_frames': video_cue_onsets_frames,
+                                                    'cue_off_photo': cue_off_photo.values,
+                                                    'shock_on_photo': shock_on_photo.values,
+                                                    'shock_off_photo': shock_off_photo.values,
+                                                    'preceding_ITI': ITItimes,
+                                                    'summary_bins_baseline_start_frame': baseline_data_summary['frame_start'].values,
+                                                    'summary_bins_baseline_stop_frame': baseline_data_summary['frame_stop'].values,
+                                                    'summary_bins_cue_start_frame': cue_data_summary['frame_start'].values,
+                                                    'summary_bins_cue_stop_frame': cue_data_summary['frame_stop'].values,
+                                                    'motion_baseline': baseline_data_summary['motion_mean'].values,
+                                                    'motion_cue': cue_data_summary['motion_mean'].values,
+                                                    'freezing_baseline': baseline_data_summary['freezing_mean'].values,
+                                                    'freezing_cue': cue_data_summary['freezing_mean'].values
+                                                    })
+        cue_shock_single_day_df['cue_dur'] = [off - on
+                                           for (on,
+                                                off)
+                                           in zip(cue_shock_single_day_df['cue_on_photo'],
+                                                  cue_shock_single_day_df['cue_off_photo']
+                                                  )
+                                           ]
+        cue_shock_single_day_df['antic_dur'] = [shock - cue
+                                             for (cue,
+                                                  shock)
+                                             in zip(cue_shock_single_day_df['cue_on_photo'],
+                                                    cue_shock_single_day_df['shock_on_photo']
+                                                    )
+                                             ]
+        cue_shock_single_day_df['shock_dur'] = [off - on
+                                           for (on,
+                                                off)
+                                           in zip(cue_shock_single_day_df['shock_on_photo'],
+                                                  cue_shock_single_day_df['shock_off_photo']
+                                                  )
+                                           ]
+        cue_shock_single_day_df['motion_norm'] = cue_shock_single_day_df['motion_cue'] - cue_shock_single_day_df['motion_baseline']
+        cue_shock_single_day_df['freezing_norm'] = cue_shock_single_day_df['freezing_cue'] - cue_shock_single_day_df['freezing_baseline']
+
+
+        epoch_dff = lpf.extractEpoch(photo_time,
+                                     dFF,
+                                     cue_on_photo.values,
+                                     total_time_window = total_time_window,
+                                     baseline_period = baseline_length,
+                                     )
+
+        cue_shock_single_day_df['epoch_motion'] = list(epoch_motion[1])
+        cue_shock_single_day_df['epoch_motion_frames'] = [epoch_motion[0]] * num_trials
+        cue_shock_single_day_df['epoch_motion_time'] = [epoch_motion[0]*(1/framerate)] * num_trials
+
+        cue_shock_single_day_df['epoch_dff'] = list(epoch_dff[1])
+        cue_shock_single_day_df['epoch_time'] = [epoch_dff[0]] * num_trials
+
+
+        cue_shock_single_day_df['epoch_dff_bsln_time'] = [time[((time >= (-1*c_dur))
+                                                              & (time < 0))
+                                                          ]
+                                                        for (time, c_dur)
+                                                        in zip(cue_shock_single_day_df['epoch_time'],
+                                                               cue_shock_single_day_df['cue_dur'])
+                                                        ]
+        cue_shock_single_day_df['epoch_dff_bsln_time_1s'] = [time[((time >= (-1))
+                                                              & (time < 0))
+                                                          ]
+                                                        for time
+                                                        in cue_shock_single_day_df['epoch_time']
+                                                        ]
+        cue_shock_single_day_df['epoch_dff_cue_time'] = [time[((time >= 0)
+                                                              & (time <= c_dur))
+                                                              ]
+                                                         for (time,
+                                                              c_dur)
+                                                         in zip(cue_shock_single_day_df['epoch_time'],
+                                                                cue_shock_single_day_df['cue_dur'])
+                                                         ]
+        cue_shock_single_day_df['epoch_dff_cue_time_1s'] = [time[((time >= 0)
+                                                              & (time <= 1))
+                                                              ]
+                                                         for time
+                                                         in cue_shock_single_day_df['epoch_time']
+                                                         ]
+        cue_shock_single_day_df['epoch_dff_shock_time'] = [time[((time >= antic_dur)
+                                                                & (time < (antic_dur + shock_dur)))
+                                                                ]
+                                                          for (time,
+                                                               antic_dur,
+                                                               shock_dur
+                                                               )
+                                                          in zip(cue_shock_single_day_df['epoch_time'],
+                                                                 cue_shock_single_day_df['antic_dur'],
+                                                                 cue_shock_single_day_df['shock_dur'],
+                                                                 )
+                                                          ]
+        #AUC
+        # #absolute deviation from baseline mean
+        cue_shock_single_day_df['epoch_dff_bsln_mean'] = [np.mean(dff[((time >= (-1*c_dur))
+                                                                              & (time < 0))
+                                                                            ]
+                                                                        )
+
+                                                            for (dff,
+                                                                  time,
+                                                                  c_dur)
+                                                            in zip(cue_shock_single_day_df['epoch_dff'],
+                                                                    cue_shock_single_day_df['epoch_time'],
+                                                                    cue_shock_single_day_df['cue_dur'])
+                                                            ]
+
+        #max peak during whole session
+        cue_shock_single_day_df['epoch_dff_max_peak_raw'] = [np.max(dff[((time >= 0)
+                                                                    & (time <= 20))
+                                                                    ]
+                                                                )
+
+                                                           for (dff,
+                                                                time,
+                                                                )
+                                                           in zip(cue_shock_single_day_df['epoch_dff'],
+                                                                  cue_shock_single_day_df['epoch_time'],
+                                                                  )
+                                                           ]
+        cue_shock_single_day_df['epoch_dff_max_peak'] = cue_shock_single_day_df['epoch_dff_max_peak_raw'] - cue_shock_single_day_df['epoch_dff_bsln_mean']
+
+
+
+
+        #min during 14s cue
+
+
+
+        #AUC_last 14 seconds of cue
+        cue_shock_single_day_df['epoch_dff_bsln_auc_last14s'] = [auc(time[((time >= (-1*14))
+                                                                   & (time < 0))
+                                                                  ],
+                                                          dff[((time >= (-1*14))
+                                                               & (time < 0))
+                                                              ]
+                                                          )
+                                                      for (dff,
+                                                           time,
+                                                           c_dur)
+                                                      in zip(cue_shock_single_day_df['epoch_dff'],
+                                                             cue_shock_single_day_df['epoch_time'],
+                                                             cue_shock_single_day_df['cue_dur'])
+                                                      ]
+
+        cue_shock_single_day_df['epoch_dff_auc_cue_raw_last14s'] = [auc(time[((time >= 1)
+                                                                      & (time <= c_dur))
+                                                                     ],
+                                                               dff[((time >= 1)
+                                                                    & (time <= c_dur))
+                                                                    ]
+                                                               )
+                                                           for (dff,
+                                                                time,
+                                                                c_dur,
+                                                                )
+                                                           in zip(cue_shock_single_day_df['epoch_dff'],
+                                                                  cue_shock_single_day_df['epoch_time'],
+                                                                  cue_shock_single_day_df['cue_dur'])
+                                                           ]
+
+
+        cue_shock_single_day_df['epoch_dff_auc_cue_norm_last14s'] = (cue_shock_single_day_df['epoch_dff_auc_cue_raw_last14s']
+                                                                    - cue_shock_single_day_df['epoch_dff_bsln_auc_last14s']
+                                                                    )
+
+
+
+
+
+        FC_trial_data_df = pd.concat([FC_trial_data_df,
+                                       cue_shock_single_day_df
+                                       ],
+                                      axis = 0,
+                                      ignore_index=True)
+
+    FC_trial_data_df['cue_trial_num'] = FC_trial_data_df.groupby('animal').cumcount()+1
+
+    FC_trial_data_df['cumsum_freezing_norm'] = FC_trial_data_df.groupby('animal')['freezing_norm'].cumsum()
+    FC_trial_data_df['cumsum_motion_norm'] = FC_trial_data_df.groupby('animal')['motion_norm'].cumsum()
+
+    FC_trial_data_df['cumsum_cue_dff_auc_norm_last14s'] = FC_trial_data_df.groupby('animal')['epoch_dff_auc_cue_norm_last14s'].cumsum()
+    def divide_by_top3_avg(group):
+        top3_avg = group['epoch_dff_max_peak'].nlargest(3).mean()
+        return group['epoch_dff'] / top3_avg
+
+    FC_trial_data_df['epoch_dff_normed_to_1'] = FC_trial_data_df.groupby('animal', group_keys=False).apply(divide_by_top3_avg, include_groups=False)
+    return FC_trial_data_df
+
 
 def get_behavior_trials_CSplus_df(df, full3600 = False):
     if full3600:
@@ -1101,7 +1309,7 @@ def get_behavior_trials_CSplus_learners_df(df, full3600 = False, conditions_to_e
     df_behavior_days_CSplus = get_behavior_days_CSplus_df(df)
     nonlearners_list = lpf.get_nonlearners(df_behavior_days_CSplus,
                                            conditions_to_exclude = conditions_to_exclude )
-    print(nonlearners_list)
+    #print(nonlearners_list)
     df_behavior_trials_CSplus = get_behavior_trials_CSplus_df(df, full3600 = full3600)
     df_behavior_trials_CSplus_learners = df_behavior_trials_CSplus[(~df_behavior_trials_CSplus['animal'].isin(nonlearners_list))].copy()
 

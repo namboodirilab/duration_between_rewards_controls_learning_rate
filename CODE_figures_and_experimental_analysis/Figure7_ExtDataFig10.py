@@ -2,7 +2,7 @@
 """
 @author: Dennis A. Burke (dennis.burke@ucsf.edu ; permanent address: dennis.a.burke AT gmail)
 
-from Burke et al. - Duration between rewards controls the rate of behavioral and dopaminergic learning
+from Burke et al. (2026) - Duration between rewards controls the rate of behavioral and dopaminergic learning
 
 FIGURE 7: Partial reinforcement scales learning rate by increasing the inter-reward interval.
 """
@@ -12,6 +12,9 @@ FIGURE 7: Partial reinforcement scales learning rate by increasing the inter-rew
 imports
 """
 import os
+#set working directory to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 import pingouin
 import scipy.stats as stats
 import numpy as np
@@ -21,21 +24,16 @@ import functions.default_configs as dc
 import functions.figure_functions as ff
 import functions.lick_photo_functions as lpf
 
-
 """
 set paths to data and outputs
 """
-
-#set working directory to script directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
 
 nwb_dir_path = r'..\DATA_experimental\001632'
 figure_path_root = r'..\FIGURES'
 fig_path_Figure7_ExtDataFig10 = os.path.join(figure_path_root, r'Figure7_ExtDataFig10')
 
-save_figs = True
-save_stats = True
+save_figs = False
+save_stats = False
 
 #%%
 """
@@ -55,7 +53,7 @@ all_trial_data_df, df = lp.make_trial_df_from_nwb(nwb_file_info_df,
                                                                total_time_window_s = 37,
                                                                baseline_length_s = 7,
                                                                )
-#%%
+
 df_behavior_days_CSplus = lp.get_behavior_days_CSplus_df(df)
 df_behavior_trials_CSplus = lp.get_behavior_trials_CSplus_df(df)
 nonlearners_list = lpf.get_nonlearners(df_behavior_days_CSplus)
@@ -68,7 +66,9 @@ df_rewards = lpf.cumLickTrialCount(df_rewards, grouping_var = ['animal', 'cue_ty
 df_behavior_trials_CSplus_10percentexcl = df_behavior_trials_CSplus_learners[~df_behavior_trials_CSplus_learners['animal'].isin(['60s-10%D_M2'])] #outlier dopamine 60s-10% see extdata10j
 df_dlight_trials_CSplus_10percentexcl = lp.subset_dopamine_animals(df_behavior_trials_CSplus_10percentexcl)
 
-
+###
+# Comment out everything above this line if already loaded all data with loadAllData.py script
+###
 #%%
 """
 FIGURE 7

@@ -21,10 +21,11 @@ import math
 from scipy.ndimage import gaussian_filter1d
 import scipy.stats as stats
 import warnings
+from natsort import natsorted
 
-import stats_functions as sf
-import lick_photo_functions as lpf
-import data_wrangling as dw
+from . import stats_functions as sf
+from . import lick_photo_functions as lpf
+from . import data_wrangling as dw
 
 
 def plotPSTHbyDay(trials_df,
@@ -3897,7 +3898,7 @@ def getCumSumLearnedTrialsAndPlotFearConditioning(trial_df,
                                                   linewidth_learned_trial = 0.35,
                                                   color_learned_trial = 'black',
                                                   get_DA_learned_trial = False,
-                                                  DA_trial_multiple = 1.5,
+                                                  DA_trial_multiple = 50,
                                                   linewidth_DA = 1,
                                                   linewidth_DA_trial = 0.25,
                                                   color_DA_trial = 'k',
@@ -3912,7 +3913,7 @@ def getCumSumLearnedTrialsAndPlotFearConditioning(trial_df,
                                                   linewidth_diagonal_DA = 0,
                                                   plot_examples = True,
                                                   condition_examples = {},
-                                                  learning_cutoff = 0.5,
+                                                  learning_cutoff = 0,
                                                   nonlearners_list =[],
                                                   axsize = (1.1, 0.82, 0.1, 0.1),
                                                   fontsize_label = 7,
@@ -3934,7 +3935,7 @@ def getCumSumLearnedTrialsAndPlotFearConditioning(trial_df,
                                                   ):
     conditions = lpf.get_conditions_as_list(conditions_to_plot, trial_df)
     original_df = trial_df.copy()
-    trial_df = trial_df[trial_df['cue_type'] == cue_type].copy()
+    #trial_df = trial_df[trial_df['cue_type'] == cue_type].copy()
     trial_df = trial_df[trial_df['condition'].isin(conditions)].copy()
 
     animals_by_condition = trial_df.groupby(['condition'])['animal'].unique().to_dict()

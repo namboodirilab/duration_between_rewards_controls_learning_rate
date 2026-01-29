@@ -2,16 +2,18 @@
 """
 @author: Dennis A. Burke (dennis.burke@ucsf.edu ; permanent address: dennis.a.burke AT gmail)
 
-from Burke et al. - Duration between rewards controls the rate of behavioral and dopaminergic learning
+from Burke et al. (2026) - Duration between rewards controls the rate of behavioral and dopaminergic learning
 
 EXTENDED DATA FIGURE 8, PANELS F THROUGH K
 """
-
 
 """
 imports
 """
 import os
+#set working directory to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,16 +29,12 @@ import functions.lick_photo_functions as lpf
 set paths to data and outputs
 """
 
-#set working directory to script directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
-
 nwb_dir_path = r'..\DATA_experimental\001632'
 figure_path_root = r'..\FIGURES'
 fig_path_ExtDataFig8fk = os.path.join(figure_path_root, r'ExtDataFig8fk')
 
-save_figs = True
-save_stats = True
+save_figs = False
+save_stats = False
 #%%
 """
 load and prepare data
@@ -48,7 +46,9 @@ all_trial_data_df, df, all_session_data_df = lp.make_trial_df_from_nwb(nwb_file_
                                                                return_session_df = True,
                                                                )
 df_behavior_trials_CSplus_learners = lp.get_behavior_trials_CSplus_learners_df(df)
-
+###
+# Comment out everything above this line if already loaded all data with loadAllData.py script
+###
 #%%
 """
 EXTENDED DATA FIGURE 8

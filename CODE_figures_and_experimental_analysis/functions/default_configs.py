@@ -54,6 +54,8 @@ colors_for_conditions = {'600s': '#7A4A9D',
                         '300 s ITI': '#be5aa2',
                         '600 s ITI': '#7A4A9D',
                         '3600 s ITI': '#4362AD',
+                        'FC-45s': 'orange',
+                        'FC-135s': 'blue',
                         }
 
 

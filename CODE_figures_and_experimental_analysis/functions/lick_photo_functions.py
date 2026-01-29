@@ -860,6 +860,25 @@ def calculate_time_to_learn_from_learned_trials(learned_trials_dict, trial_df, d
 
     return time_to_learn_dict
 
+def calculate_time_to_learn_from_learned_trials_FC(learned_trials_dict, trial_df, data_in_ms = False):
+
+    time_to_learn_dict = dict.fromkeys(learned_trials_dict.keys(),[])
+    for condition in learned_trials_dict.keys():
+        time_to_learn_dict[condition] = dict.fromkeys(learned_trials_dict[condition].keys(),[])
+        for animal, trial in learned_trials_dict[condition].items():
+            df_subset_ITI = trial_df[((trial_df['animal'] == animal)
+                                                            & (trial_df['cue_trial_num'] <= (trial+1))) ]
+            df_subset_trials = trial_df[((trial_df['animal'] == animal)
+                                                            & (trial_df['cue_trial_num'] <= (trial))) ]
+            total_ITI_before_learning = df_subset_ITI['preceding_ITI'].sum()
+            total_trial_time_before_learning = df_subset_trials['antic_dur'].sum() + df_subset_trials['shock_dur'].sum()
+            total_time_before_learning = total_ITI_before_learning + total_trial_time_before_learning
+            if data_in_ms:
+               total_time_before_learning = (total_time_before_learning/1000)
+            time_to_learn_dict[condition][animal] = total_time_before_learning
+
+    return time_to_learn_dict
+
 def calculate_rewards_to_learn_from_learned_trials(learned_trials_dict, trial_df, conditions_to_get = 'all', animals_to_exclude = None):
     conditions = get_conditions_as_list(conditions_to_get,
                                trial_df_or_data_dict = trial_df,

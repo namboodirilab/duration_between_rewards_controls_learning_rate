@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun May  4 18:09:58 2025
+@author: Dennis A. Burke (dennis.burke@ucsf.edu ; permanent address: dennis.a.burke AT gmail)
 
-@author: DeBurke
-"""
+from Burke et al. (2026) - Duration between rewards controls the rate of behavioral and dopaminergic learning
 
-"""
-FIGURE 5
+FIGURE 5: Proportional scaling of learning rate by IRI is only captured by a retrospective learning model.
+
 """
 
 
@@ -14,6 +13,9 @@ FIGURE 5
 imports
 """
 import os
+#set working directory to script directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+os.chdir(script_dir)
 import pingouin
 import scipy.stats as stats
 import statsmodels
@@ -30,16 +32,9 @@ import functions.figure_functions as ff
 import functions.lick_photo_functions as lpf
 import functions.stats_functions as sf
 
-
-
-#%%
 """
 set paths to data and outputs
 """
-
-#set working directory to script directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
 
 nwb_dir_path = r'..\DATA_experimental\001632'
 figure_path_root = r'..\FIGURES'
@@ -62,7 +57,9 @@ all_trial_data_df, df = lp.make_trial_df_from_nwb(nwb_file_info_df,
                                                                )
 
 df_behavior_trials_CSplus_learners = lp.get_behavior_trials_CSplus_learners_df(df)
-
+###
+# Comment out everything above this line if already loaded all data with loadAllData.py script
+###
 #%%
 """
 LOAD BEHAVIOR_FIT SUMMARY FILE OUTPUT TO GET TRIALS TO LEARN FOR EACH BEST FIT MODEL COMBINATION
@@ -278,8 +275,8 @@ bar_ax.set_ylim(None, 20)
 bar_ax.set_ylabel('regression slope 30 - 600 s ITI')
 bar_ax.xaxis.set_major_locator(matplotlib.ticker.FixedLocator(np.arange(6)))
 bar_ax.set_xticklabels(xtick_labels, rotation = 35, ha ='right')
-pf.set_ax_size_inches(dc.axsize_bars_5[0], dc.axsize_bars_5[1], bar_ax, print_new_sizes=False)
-pf.standardize_plot_graphics(bar_ax)
+ff.set_ax_size_inches(dc.axsize_bars_5[0], dc.axsize_bars_5[1], bar_ax, print_new_sizes=False)
+ff.standardize_plot_graphics(bar_ax)
 fig_path = fig_path_Figure5_ExtDataFig7
 if save_figs:
     bar_fig.savefig(os.path.join(fig_path, 'slope_comparisons.pdf'),
