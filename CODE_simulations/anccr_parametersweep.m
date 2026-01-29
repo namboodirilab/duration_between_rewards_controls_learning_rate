@@ -6,7 +6,7 @@ addpath('configs')
 
 %% inputs for sweep
 % model name
-model = 'microstimulus';
+model = 'anccr';
 exp_path = '../DATA_simulation_outputs/anccr_sweep'
 
 %Define the parameters and values to search over
@@ -19,4 +19,4 @@ model_sweep.k = [0.1, 0.3, 0.5, 0.7];
 expparams = defaultexpparams;
 expparams.trialpersession = [100, 50, 11, 6, 2];
 
-paramsweep_anccr(model, exp_name, model_sweep, expparams)
+paramsweep_anccr(model, exp_path, model_sweep, expparams)
