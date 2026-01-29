@@ -1,5 +1,5 @@
 # duration_between_rewards_controls_learning_rate
-Code for generating all figures, analysis, and simulations for the paper "Duration between rewards controls the rate of behavioral and dopaminergic learning"
+Code for generating all figures, analysis, and simulations for the paper "Duration between rewards controls the rate of behavioral and dopaminergic learning" Burke et al. (2026) Nature Neuroscience
 
 data associated with the paper can be found at https://dandiarchive.org/dandiset/001632
 
